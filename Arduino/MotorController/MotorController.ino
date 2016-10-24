@@ -8,12 +8,14 @@
 // SET PWM:       L,speed_motor_left,speed_motor_right\n
 // RESET ENCODER: I\n
 // READ PID Value:S,1/2\n
+// SET DebugRate: Z,rate\n   -- bigger/slower
 
 #include <math.h>
 #include <EEPROM.h>
-
 #include <Encoder.h>
-Encoder encL(2,4);
+#include <PID_v1.h>
+
+Encoder encL(2,4); //inversed pins, to get correct direction
 Encoder encR(3,5);
 
 #include "MusafirMotor.h"
@@ -27,17 +29,16 @@ struct motorParams {
 motorParams motorPIDL;
 motorParams motorPIDR;
 
-const float wheel_radius = 3.35; // in cm
-const float circumference = 2 * M_PI * wheel_radius;
+const float wheel_diameter = 9.15; // in mm
+const float circumference = M_PI * wheel_diameter;
 const float tickDistance = (float)circumference/1500.0;
 
 unsigned long previousMillis = 0;
-const long interval = 10;
+const long interval = 10; // in ms
 
 String inputString = "";
 boolean stringComplete = false;
 
-#include <PID_v1.h>
 double vel1 = 0, vel2 = 0;
 double spd1, spd2;
 double pwm1, pwm2;
@@ -45,6 +46,8 @@ double pwm1, pwm2;
 PID pidL(&spd1, &pwm1, &vel1, 1,0,0, DIRECT);
 PID pidR(&spd2, &pwm2, &vel2, 1,0,0, DIRECT);
 boolean pidActive= false;
+
+unsigned int debugCount=0,debugRate=100;
 
 void setup() {
   Serial.begin(115200);
@@ -57,11 +60,11 @@ void setup() {
 
   initEEPROM();
 
-  pidL.SetMode(MANUAL);       // PID CONTROL OFF
+  pidL.SetMode(MANUAL); // PID CONTROL OFF
   pidR.SetMode(MANUAL);
   pidL.SetTunings(motorPIDL.kp, motorPIDL.ki, motorPIDL.kd);
   pidR.SetTunings(motorPIDR.kp, motorPIDR.ki, motorPIDR.kd);
-  pidL.SetSampleTime(interval);      // sample time for PID
+  pidL.SetSampleTime(interval); // sample time for PID
   pidR.SetSampleTime(interval);
   pidL.SetOutputLimits(0,255);  // min/max PWM
   pidR.SetOutputLimits(0,255);
@@ -69,8 +72,6 @@ void setup() {
 
 void(* resetFunc) (void) = 0;
 
-unsigned int debugCount=0;
-int zp=0;
 void loop() {
   if (stringComplete) {
     interpretSerialData();
@@ -82,7 +83,7 @@ void loop() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
     long encCurr1 = encL.read();
-    long encCurr2 = encR.read();
+    long encCurr2 = -encR.read(); //encoder is reversed
     resetEncoders();
 
     float distance1 = (float)encCurr1*tickDistance;
@@ -91,31 +92,8 @@ void loop() {
     spd2 = (float)distance2*(1000.0/interval);
 
     debugCount++;
-    if(DEBUG && (debugCount%100==0)){
-//      Serial.print(encCurr1);
-//      Serial.print(", ");
-//      Serial.print(distance1);
-//      Serial.print(", ");
-      Serial.print(spd1);
-      Serial.print(", ");
-//      Serial.print(vel1);
-//      Serial.print(", ");
-      Serial.print(vel1-spd1);
-      Serial.print(", ");
-      Serial.print(pwm1);
-      Serial.print(" | ");
-//      Serial.print(encCurr2);
-//      Serial.print(", ");
-//      Serial.print(distance2);
-//      Serial.print(", ");
-      Serial.print(spd2);
-      Serial.print(", ");
-//      Serial.print(vel2);
-//      Serial.print(", ");
-      Serial.print(vel2-spd2);
-      Serial.print(", ");
-      Serial.print(pwm2);
-      Serial.println();
+    if(DEBUG && (debugCount%debugRate==0)){
+      debugDump();
     }
   }
   pidL.Compute();
@@ -126,6 +104,27 @@ void loop() {
     if(vel2>0) motorR.setPWM(pwm2);
     else motorR.setPWM(0);
   }
+}
+
+void debugDump(void){
+  // PID Vals for bot motors
+  //Sensor(Speed), SetPoint, Error, Output
+  Serial.print(spd1);
+  Serial.print(", ");
+  Serial.print(vel1);
+  Serial.print(", ");
+  Serial.print(vel1-spd1);
+  Serial.print(", ");
+  Serial.print(pwm1);
+  Serial.print(" | ");
+  Serial.print(spd2);
+  Serial.print(", ");
+  Serial.print(vel2);
+  Serial.print(", ");
+  Serial.print(vel2-spd2);
+  Serial.print(", ");
+  Serial.print(pwm2);
+  Serial.println();
 }
 
 void interpretSerialData(void){
@@ -192,13 +191,14 @@ void interpretSerialData(void){
           EEPROM.put((const int)(MAGICADDRESS+sizeof(motorParams)), motorPIDR);
           if(DEBUG) Serial.println("motorPIDR ");
         }
-        Serial.print("kp: ");
+        Serial.print("h,");
+        Serial.print(val1);
+        Serial.print(',');
         Serial.println(p);
-        Serial.print("ki: ");
+        Serial.print(',');
         Serial.println(i);
-        Serial.print("kd: ");
+        Serial.print(',');
         Serial.println(d);
-        Serial.println('h');
         break;
       case 'L':
         // COMMAND:  L,speed_motor_left,speed_motor_right\n
@@ -243,6 +243,15 @@ void interpretSerialData(void){
           Serial.print(motorPIDR.ki);
           Serial.print(',');
           Serial.println(motorPIDR.kd);
+        }
+        break;
+      case 'Z':
+        // COMMAND:  Z,rate\n
+        c1 = inputString.indexOf(',')+1;
+        c2 = inputString.indexOf(',',c1);
+        val1 = inputString.substring(c1).toInt();
+        if(val1>1) {
+          debugRate=val1;
         }
         break;
       case 'R':
@@ -296,7 +305,7 @@ void resetEncoders(void){
 
 void serialEvent() 
 {
-  while (Serial.available()) {
+  while(Serial.available()){
     char inChar = (char)Serial.read();
     inputString += inChar;
     if (inChar == '\n') {
