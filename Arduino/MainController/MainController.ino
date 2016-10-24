@@ -18,7 +18,7 @@ char serialBuffer[31] = "";
 
 void setup(void) {
   Serial.begin(115200);
-  Serial1.begin(115200);
+  //Serial1.begin(115200);
   printf_begin();
   radio.begin();
   radio.setDataRate(RF24_1MBPS);
