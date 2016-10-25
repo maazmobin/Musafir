@@ -1,6 +1,7 @@
 // Copyright (c) 2014, Solder Spot
 // All rights reserved.
-// See LICENSE.txt in root folder 
+// See LICENSE.txt in MotorController folder 
+// MODIFIED by Zaid Pirwani
 
 #include "Navigator.h"
 #include <math.h>
