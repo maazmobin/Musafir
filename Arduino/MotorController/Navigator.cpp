@@ -94,7 +94,7 @@ bool Navigator::UpdateTicks( int16_t lticks, int16_t rticks, nvTime now )
     m_pose.position.x += s*sin(m_heading);
     m_pose.position.y += s*cos(m_heading);
 
-        // reset delta values
+    // reset delta values
     m_dt = 0;
     m_lticks = 0;
     m_rticks = 0;
