@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Created by Zaid Pirwani - teckel@leethost.com
+// Created by Zaid Pirwani - zaid@ejaadtech.com
 // Copyright 2015 License: GNU GPL v3 http://www.gnu.org/licenses/gpl.html
 //
 // See "MusafirMotor.h" for purpose, syntax, version history, links, and more.
