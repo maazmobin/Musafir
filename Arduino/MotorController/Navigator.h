@@ -1,6 +1,8 @@
 // Copyright (c) 2014, Solder Spot
 // All rights reserved.
-// See LICENSE.txt in root folder 
+// See LICENSE.txt in MotorController folder 
+// MODIFIED by Zaid Pirwani
+
 
 #ifndef __NAVIGATOR_H
 #define __NAVIGATOR_H
@@ -14,6 +16,7 @@
 //----------------------------------------
 
 #define nvMAX_TIME      0xffffffff
+
 
 //----------------------------------------
 // Base Types
@@ -97,7 +100,7 @@ class Navigator
    // service
         void            Reset( nvTime now );
         bool            UpdateTicks( int16_t lticks, int16_t rticks, nvTime now );
-
+		
    // getters
         // location
         nvPose          Pose( void ) { return m_pose; }
@@ -130,7 +133,6 @@ class Navigator
 
         // config
         void            SetMinInterval( nvTime min ) { m_min_dt = min; }
-
 
    // navigation
         nvPosition      NewPosition( nvDistance distance ); 

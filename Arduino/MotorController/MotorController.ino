@@ -1,14 +1,10 @@
-#define DEBUG 1
-#define MAGICADDRESS 7
-// randomly(or is it..!)
-
-// SET VELOCITY:  D,speed_motor_left,speed_motor_right\n
-// SET PIDs:      H,P,I,D,1/2\n
+//NOT// SET VELOCITY:  D,speed_motor_left,speed_motor_right\n
+//NOT// SET PIDs:      H,P,I,D,1/2\n
 // READ ENCODER:  R\n
 // SET PWM:       L,speed_motor_left,speed_motor_right\n
 // RESET ENCODER: I\n
-// READ PID Value:S,1/2\n
-// SET DebugRate: Z,rate\n   -- bigger/slower
+//NOT// READ PID Value:S,1/2\n
+//NOT// SET DebugRate: Z,rate\n   -- bigger/slower
 
 #include <math.h>
 #include <EEPROM.h>
@@ -48,8 +44,6 @@ void setup() {
   Serial.begin(115200);
   inputString.reserve(100);
   
-  encL.write(0);
-  encR.write(0);
   motorL.setDir(FORWARD);
   motorR.setDir(FORWARD);
   
@@ -57,16 +51,36 @@ void setup() {
   navigator.SetDistanceScaler( DISTANCE_SCALER );
   navigator.SetWheelbaseScaler( WHEELBASE_SCALER );
   navigator.SetWheelRLScaler( WHEEL_RL_SCALER );
+  navigator.Reset(millis());
 }
 
 void(* resetFunc) (void) = 0;
 
+unsigned int debugCount=0;
 void loop() {
   if (stringComplete) {
     interpretSerialData();
     stringComplete = false;
     inputString = "";
   }
+
+  
+  if(navigator.UpdateTicks(encL.read(), encR.read(), millis()))
+    debugCount++;
+
+  if(debugCount%100==0){
+    Serial.print("x=");
+    Serial.print(navigator.Position().x);
+    Serial.print(",y=");
+    Serial.print(navigator.Position().y);
+    Serial.print(",T=");
+    Serial.print(navigator.Heading());
+    Serial.print(",Speed=");
+    Serial.print(navigator.Speed());
+    Serial.print(",TurnRate=");
+    Serial.print(navigator.TurnRate());
+  }
+
 }
 
 void interpretSerialData(void){
