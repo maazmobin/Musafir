@@ -9,35 +9,16 @@ MusafirMotor motorL(7, 6, 9);
 MusafirMotor motorR(13, 12, 10);
 
 double spdL, spdR;
-#define WHEEL_DIAMETER_CM    9.15  // centimeter
+#define WHEEL_DIAMETER    9.15  // centimeter
 #define TICKS_PER_REV     1500
-#define DISTANCE_PER_TICK (float)((M_PI*WHEEL_DIAMETER_CM)/TICKS_PER_REV)
+#define DISTANCE_PER_TICK (float)((M_PI*WHEEL_DIAMETER)/TICKS_PER_REV)
 
 int interval=10;
-
-#include "Navigator.h"
-Navigator  navigator;
-//from https://github.com/solderspot/NavBot/blob/master/NavBot_v1/BlankBot.h
-// Navigator defines
-#define WHEELBASE               nvMM(190)      // millimeters
-#define WHEEL_DIAMETER          nvMM(91.5)     // millimeters
-
-// correct for systematic errors
-#define WHEEL_RL_SCALER         1.0f  // Ed
-#define WHEELBASE_SCALER        1.0f  // Eb
-// correct distance 
-#define DISTANCE_SCALER         1.0f  // Es
 
 void setup() {
   Serial.begin(115200);
   motorL.setDir(FORWARD);
   motorR.setDir(FORWARD);
-  
-  navigator.InitEncoder( WHEEL_DIAMETER, WHEELBASE, TICKS_PER_REV );
-  navigator.SetDistanceScaler( DISTANCE_SCALER );
-  navigator.SetWheelbaseScaler( WHEELBASE_SCALER );
-  navigator.SetWheelRLScaler( WHEEL_RL_SCALER );
-  navigator.Reset(millis());  
 }
 
 int speeds[] = {0, 20, 30, 40, 50, 80, 100, 125, 150, 175, 200, 225, 250, 254, 255,
@@ -46,7 +27,6 @@ int speeds[] = {0, 20, 30, 40, 50, 80, 100, 125, 150, 175, 200, 225, 250, 254, 2
 void loop() {
     encCurrL = encL.read();
     encCurrR = -encR.read();
-    navigator.UpdateTicks(encCurrL, encCurrR, millis());
     encL.write(0); encR.write(0);
     delay(interval);
     int currSecond = millis()/1000;
@@ -65,9 +45,7 @@ void loop() {
       Serial.print(", ");
       Serial.print(spdL);
       Serial.print(", ");
-      Serial.print(spdR);
-      Serial.print(",Speed=");
-      Serial.print(navigator.Speed());
+      Serial.println(spdR);
     }else{
       motorL.setPWM(0);
       motorR.setPWM(0);
