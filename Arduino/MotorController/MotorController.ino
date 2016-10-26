@@ -1,13 +1,14 @@
 #define DEBUG 1
 #define MAGICADDRESS 7
 
-//NOT// SET VELOCITY:  D,speed_motor_left,speed_motor_right\n
-//NOT// SET PIDs:      H,P,I,D,1/2\n
-// READ ENCODER:  R\n
-// SET PWM:       L,speed_motor_left,speed_motor_right\n
-// RESET ENCODER: I\n
-//NOT// READ PID Value:S,1/2\n
-//NOT// SET DebugRate: Z,rate\n   -- bigger/slower
+// SET VELOCITY:      D,speed_motor_left,speed_motor_right\n
+// SET PIDs:          H,P,I,D,1/2\n
+// READ ENCODER:      R\n
+// READ POSE:         P\n
+// SET PWM:           L,speed_motor_left,speed_motor_right\n
+// RESET POSE/ENCODER:I\n
+// READ PID Value:    S,1/2\n
+// SET DebugRate:     Z,rate\n   -+- bigger/slower
 
 #include <math.h>
 #include <EEPROM.h>
@@ -69,6 +70,7 @@ void setup() {
   navigator.SetDistanceScaler( DISTANCE_SCALER );
   navigator.SetWheelbaseScaler( WHEELBASE_SCALER );
   navigator.SetWheelRLScaler( WHEEL_RL_SCALER );
+  navigator.m_min_dt(nvMS(interval))
   navigator.Reset(millis());
 
   initEEPROM();
