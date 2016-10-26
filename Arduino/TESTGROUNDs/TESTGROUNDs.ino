@@ -48,7 +48,6 @@ void loop() {
     encCurrR = -encR.read();
     navigator.UpdateTicks(encCurrL, encCurrR, millis());
     encL.write(0); encR.write(0);
-    delay(interval);
     int currSecond = millis()/1000;
     if(currSecond>0 && currSecond<30){
       motorL.setPWM(speeds[currSecond-1]);
@@ -66,10 +65,11 @@ void loop() {
       Serial.print(spdL);
       Serial.print(", ");
       Serial.print(spdR);
-      Serial.print(",Speed=");
-      Serial.print(navigator.Speed());
+      Serial.print(", ");
+      Serial.println(navigator.Speed()/10);
     }else{
       motorL.setPWM(0);
       motorR.setPWM(0);
     }
+    delay(interval);
 }
