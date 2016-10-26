@@ -13,7 +13,7 @@ double spdL, spdR;
 #define TICKS_PER_REV     1500
 #define DISTANCE_PER_TICK (float)((M_PI*WHEEL_DIAMETER_CM)/TICKS_PER_REV)
 
-int interval=10;
+int interval=100;
 
 #include "Navigator.h"
 Navigator  navigator;
@@ -50,8 +50,18 @@ void loop() {
     encL.write(0); encR.write(0);
     int currSecond = millis()/1000;
     if(currSecond>0 && currSecond<30){
-      motorL.setPWM(speeds[currSecond-1]);
-      motorR.setPWM(speeds[currSecond-1]);
+      motorL.setPWM(50);
+      motorR.setPWM(50);
+      Serial.print(millis());
+      Serial.print(", ");
+      Serial.print(navigator.Position().x/10);
+      Serial.print(", ");
+      Serial.print(navigator.Position().y/10);
+      Serial.print(", ");
+      Serial.print(navigator.Heading());
+      Serial.print(", ");
+      Serial.print(navigator.TurnRate());
+      Serial.print(", ");
       Serial.println(navigator.Speed()/10);
     }else{
       motorL.setPWM(0);
