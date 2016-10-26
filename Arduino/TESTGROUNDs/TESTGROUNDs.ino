@@ -45,27 +45,13 @@ int speeds[] = {0, 20, 30, 40, 50, 80, 100, 125, 150, 175, 200, 225, 250, 254, 2
 
 void loop() {
     encCurrL = encL.read();
-    encCurrR = -encR.read();
+    encCurrR =-encR.read();
     navigator.UpdateTicks(encCurrL, encCurrR, millis());
     encL.write(0); encR.write(0);
     int currSecond = millis()/1000;
     if(currSecond>0 && currSecond<30){
       motorL.setPWM(speeds[currSecond-1]);
       motorR.setPWM(speeds[currSecond-1]);
-      float distanceL = (float)encCurrL*DISTANCE_PER_TICK;
-      spdL = (float)distanceL*(1000/interval);
-      float distanceR = (float)encCurrR*DISTANCE_PER_TICK;
-      spdR = (float)distanceR*(1000/interval);
-      Serial.print(speeds[currSecond-1]);
-      Serial.print(", ");
-      Serial.print(encCurrL);
-      Serial.print(", ");
-      Serial.print(encCurrR);
-      Serial.print(", ");
-      Serial.print(spdL);
-      Serial.print(", ");
-      Serial.print(spdR);
-      Serial.print(", ");
       Serial.println(navigator.Speed()/10);
     }else{
       motorL.setPWM(0);

@@ -63,26 +63,27 @@ void Navigator::Reset( nvTime now )
 bool Navigator::UpdateTicks( int16_t lticks, int16_t rticks, nvTime now )
 {
     // update delta values
-    //m_dt +=  nvDeltaTime( m_last_ticks_time, now );
-//    m_lticks += lticks;
-//    m_rticks += rticks;
-//
+    m_dt +=  nvDeltaTime( m_last_ticks_time, now );
+    m_lticks += lticks;
+    m_rticks += rticks;
+
     // remember time for next call
     m_last_ticks_time = now;
-//
-//    // see if we have accumulated min time delta 
-//    if ( m_dt < m_min_dt )
-//    {
-//        // no, so wait
-//        return false;
-//    }
-    m_dt=10;
-    m_lticks = lticks;
-    m_rticks = rticks;
+
+    // see if we have accumulated min time delta 
+    if ( m_dt < m_min_dt )
+    {
+        // no, so wait
+        return false;
+    }
+
+//    m_dt=10;
+//    m_lticks = lticks;
+//    m_rticks = rticks;
 
     nvDistance sr = ((nvDistance)m_rticks)*m_rticks_to_dist;
     nvDistance sl = ((nvDistance)m_lticks)*m_lticks_to_dist;
-    nvDistance s = (sr + sl)*0.5f;
+    nvDistance s  = (sr + sl)*0.5f;
 
     // calc and update change in heading
     nvRadians theta = (sl - sr)/m_effective_wheelbase;
