@@ -16,6 +16,9 @@ Navigator  navigator;
 #define WHEELBASE               nvMM(190)      // millimeters
 #define WHEEL_DIAMETER          nvMM(91.5)     // millimeters
 #define TICKS_PER_REV           1500
+#define WHEEL_DIAMETER_CM       9.15           // centi-meters
+#define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/1500.0
+
 // correct for systematic errors
 #define WHEEL_RL_SCALER         1.0f  // Ed
 #define WHEELBASE_SCALER        1.0f  // Eb
@@ -34,7 +37,8 @@ boolean pidActive= false;
 
 unsigned long previousMillis = 0;
 int interval = 10; // in ms
-int debugInterval = 1000; // in ms
+int debugInterval = 100; // in ms
+unsigned long debugPreviousMillis = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -49,23 +53,35 @@ void setup() {
   navigator.Reset(millis());
 
   initPID();
+  velL = 50; //cm/s for TESTING of nav Speed calculations.
+  velR = 50;
+  pidL.SetMode(AUTOMATIC);
+  pidR.SetMode(AUTOMATIC);
 }
 
 void loop() {   
   pidL.Compute();
   pidR.Compute();
+
   if(velL>0) motorL.setPWM(pwmL);
   else motorL.setPWM(0);
   if(velR>0) motorR.setPWM(pwmR);
   else motorR.setPWM(0);
 
-  encCurrL = encL.read(); encL.write(0); 
-  encCurrR =-encR.read(); encR.write(0);
-  navigator.UpdateTicks(encCurrL, encCurrR, millis());
-
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= debugInterval) {
+  if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
+    encCurrL = encL.read(); encL.write(0); 
+    encCurrR =-encR.read(); encR.write(0);
+    navigator.UpdateTicks(encCurrL, encCurrR, millis());
+    float distanceL = (float)encCurrL*DISTANCE_PER_TICK;
+    measuredVelL = (float)distanceL*(1000.0/interval);
+    float distanceR = (float)encCurrR*DISTANCE_PER_TICK;
+    measuredVelR = (float)distanceR*(1000.0/interval);
+  }
+
+  if (currentMillis - debugPreviousMillis >= debugInterval) {
+    debugPreviousMillis = currentMillis;
     Serial.print(millis());
     Serial.print(", ");
     Serial.print(navigator.Position().x/10);
@@ -76,7 +92,11 @@ void loop() {
     Serial.print(", ");
     Serial.print(navigator.TurnRate());
     Serial.print(", ");
-    Serial.println(navigator.Speed()/10);
+    Serial.print(navigator.Speed()/10);
+    Serial.print(", ");
+    Serial.print(measuredVelL);
+    Serial.print(", ");
+    Serial.println(measuredVelR);
   }
 }
 
