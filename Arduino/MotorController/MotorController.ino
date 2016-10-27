@@ -70,7 +70,6 @@ void setup() {
   navigator.SetDistanceScaler( DISTANCE_SCALER );
   navigator.SetWheelbaseScaler( WHEELBASE_SCALER );
   navigator.SetWheelRLScaler( WHEEL_RL_SCALER );
-  navigator.m_min_dt(nvMS(interval))
   navigator.Reset(millis());
 
   initEEPROM();
