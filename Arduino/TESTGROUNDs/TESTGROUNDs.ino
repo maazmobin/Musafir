@@ -40,12 +40,9 @@ int interval = 10; // in ms
 int debugInterval = 100; // in ms
 unsigned long debugPreviousMillis = 0;
 
-int tempRunningTime=20000; // ms
+int tempRunningTime=5000; // ms
 
-float theta=0;
-float x_position=0,y_position=0;
-float Sr,Sl;
-float av;
+
 
 void setup() {
   Serial.begin(115200);
@@ -85,15 +82,6 @@ void loop() {
     measuredVelL = (float)distanceL*(1000.0/interval);
     float distanceR = (float)encCurrR*DISTANCE_PER_TICK;
     measuredVelR = (float)distanceR*(1000.0/interval);
-    Sr=distanceR;Sl=distanceL;
-    av=(Sr+Sl)/2;
-    theta+=(measuredVelR-measuredVelL)/(190*interval);
-    if (theta>6.28f)
-    theta-=6.28;
-    else if(theta<0)
-    theta+=6.28;
-    y_position+=av*cos(theta);
-    x_position+=av*sin(theta);
   }
 
   if (currentMillis - debugPreviousMillis >= debugInterval && millis()<=tempRunningTime) {
@@ -114,7 +102,7 @@ void loop() {
     Serial.print(", ");
     Serial.println(measuredVelR);*/
 
-    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(int(navigator.Heading()))+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10)+","+String(theta*180/3.142)+","+String(x_position)+","+String(y_position);
+    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(int(navigator.Heading()))+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
   }
  else if(millis()>=tempRunningTime)
