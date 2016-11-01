@@ -89,6 +89,8 @@ void serialReceive(void) {
     radio.openWritingPipe(pipes[0]);
     radio.openReadingPipe(1,pipes[1]);
     radio.startListening();
+    Serial.print(sendPayload);
+    Serial.println();
     sendPayload = "";
     stringComplete = false;
   }

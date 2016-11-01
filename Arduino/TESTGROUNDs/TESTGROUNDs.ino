@@ -14,9 +14,9 @@ Navigator  navigator;
 //from https://github.com/solderspot/NavBot/blob/master/NavBot_v1/BlankBot.h
 // Navigator defines
 #define WHEELBASE               nvMM(190)      // millimeters
-#define WHEEL_DIAMETER          nvMM(91.5)     // millimeters
+#define WHEEL_DIAMETER          nvMM(89)     // millimeters
 #define TICKS_PER_REV           1500
-#define WHEEL_DIAMETER_CM       9.15           // centi-meters
+#define WHEEL_DIAMETER_CM       8.9           // centi-meters
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/1500.0
 
 // correct for systematic errors
@@ -40,6 +40,13 @@ int interval = 10; // in ms
 int debugInterval = 100; // in ms
 unsigned long debugPreviousMillis = 0;
 
+int tempRunningTime=20000; // ms
+
+float theta=0;
+float x_position=0,y_position=0;
+float Sr,Sl;
+float av;
+
 void setup() {
   Serial.begin(115200);
   motorL.setDir(FORWARD);
@@ -53,8 +60,8 @@ void setup() {
   navigator.Reset(millis());
 
   initPID();
-  velL = 50; //cm/s for TESTING of nav Speed calculations.
-  velR = 50;
+  velL = 30; //cm/s for TESTING of nav Speed calculations.
+  velR = 40;
   pidL.SetMode(AUTOMATIC);
   pidR.SetMode(AUTOMATIC);
 }
@@ -78,11 +85,20 @@ void loop() {
     measuredVelL = (float)distanceL*(1000.0/interval);
     float distanceR = (float)encCurrR*DISTANCE_PER_TICK;
     measuredVelR = (float)distanceR*(1000.0/interval);
+    Sr=distanceR;Sl=distanceL;
+    av=(Sr+Sl)/2;
+    theta+=(measuredVelR-measuredVelL)/(190*interval);
+    if (theta>6.28f)
+    theta-=6.28;
+    else if(theta<0)
+    theta+=6.28;
+    y_position+=av*cos(theta);
+    x_position+=av*sin(theta);
   }
 
-  if (currentMillis - debugPreviousMillis >= debugInterval) {
+  if (currentMillis - debugPreviousMillis >= debugInterval && millis()<=tempRunningTime) {
     debugPreviousMillis = currentMillis;
-    Serial.print(millis());
+   /* Serial.print(millis());
     Serial.print(", ");
     Serial.print(navigator.Position().x/10);
     Serial.print(", ");
@@ -96,8 +112,18 @@ void loop() {
     Serial.print(", ");
     Serial.print(measuredVelL);
     Serial.print(", ");
-    Serial.println(measuredVelR);
+    Serial.println(measuredVelR);*/
+
+    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(int(navigator.Heading()))+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10)+","+String(theta*180/3.142)+","+String(x_position)+","+String(y_position);
+    Serial.println(dataTX);
   }
+ else if(millis()>=tempRunningTime)
+  {
+      velL = 0; //cm/s for TESTING of nav Speed calculations.
+  velR = 0;
+  motorL.setDir(BRAKE);
+  motorR.setDir(BRAKE);
+    }
 }
 
 void initPID(void){
