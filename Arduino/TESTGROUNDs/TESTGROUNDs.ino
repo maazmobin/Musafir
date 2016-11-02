@@ -20,17 +20,17 @@ Navigator  navigator;
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/1500.0
 
 // correct for systematic errors
-#define WHEEL_RL_SCALER         1.0f  // Ed
-#define WHEELBASE_SCALER        1.0f  // Eb
+#define WHEEL_RL_SCALER         0.97f  // Ed
+#define WHEELBASE_SCALER        0.98f  // Eb
 // correct distance 
-#define DISTANCE_SCALER         1.0f  // Es
+#define DISTANCE_SCALER         (164.0f/150.0f)  // Es
 
 #include <PID_v1.h>
 double measuredVelL=0, measuredVelR=0;
 double pwmL=0, pwmR=0;
 double velL=0, velR=0;
 // PID (&input, &output, &setpoint, kp, ki, kd, DIRECT/REVERSE)
-PID pidL(&measuredVelL, &pwmL, &velL, 2,1,0, DIRECT);
+PID pidL(&measuredVelL, &pwmL, &velL, 2.05,1,0, DIRECT);
 PID pidR(&measuredVelR, &pwmR, &velR, 2,1,0, DIRECT);
 
 boolean pidActive= false;
@@ -57,7 +57,7 @@ void setup() {
   navigator.Reset(millis());
 
   initPID();
-  velL = 30; //cm/s for TESTING of nav Speed calculations.
+  velL = 40; //cm/s for TESTING of nav Speed calculations.
   velR = 40;
   pidL.SetMode(AUTOMATIC);
   pidR.SetMode(AUTOMATIC);
