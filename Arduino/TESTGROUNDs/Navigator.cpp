@@ -16,7 +16,7 @@ Navigator::Navigator()
 {
     m_init_pose.position.x = 0.0f;
     m_init_pose.position.y = 0.0f;
-    m_init_pose.heading = 0.0f;
+    m_init_pose.heading = 90.0f;  // maaz changed it
     m_dist_scaler = m_wheel_rl_scaler = m_wheelbase_scaler = 1.0f;
 }
 
@@ -86,7 +86,7 @@ bool Navigator::UpdateTicks( int16_t lticks, int16_t rticks, nvTime now )
     nvDistance s  = (sr + sl)*0.5f;
 
     // calc and update change in heading
-    nvRadians theta = (sl - sr)/m_effective_wheelbase;
+    nvRadians theta = (sr - sl)/m_effective_wheelbase;
     m_heading = nvClipRadians( m_heading + theta);
 
     // update velocities (per sec)
@@ -95,8 +95,8 @@ bool Navigator::UpdateTicks( int16_t lticks, int16_t rticks, nvTime now )
 
     // update pose
     m_pose.heading = nvRadToDeg(m_heading);
-    m_pose.position.x += s*sin(m_heading);
-    m_pose.position.y += s*cos(m_heading);
+    m_pose.position.x += s*cos(m_heading);
+    m_pose.position.y += s*sin(m_heading);
 
     // reset delta values
     m_dt = 0;
@@ -114,8 +114,8 @@ nvPosition Navigator::NewPosition( nvDistance distance )
 {
     nvPosition pos;
 
-    pos.x = m_pose.position.x + distance*sin(m_heading);
-    pos.y = m_pose.position.y + distance*cos(m_heading);
+    pos.x = m_pose.position.x + distance*cos(m_heading);
+    pos.y = m_pose.position.y + distance*sin(m_heading);
 
     return pos;
 }
@@ -142,8 +142,8 @@ nvPosition Navigator::NewPositionByHeading( nvPosition &pos, nvHeading heading, 
 {
     nvPosition new_pos;
     nvRadians h = nvDegToRad(nvClipHeading(heading));
-    new_pos.x = pos.x + distance*sin(h);
-    new_pos.y = pos.y + distance*cos(h);
+    new_pos.x = pos.x + distance*cos(h);
+    new_pos.y = pos.y + distance*sin(h);
 
     return new_pos;
 }

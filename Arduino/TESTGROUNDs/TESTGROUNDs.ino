@@ -102,7 +102,7 @@ void loop() {
     Serial.print(", ");
     Serial.println(measuredVelR);*/
 
-    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(int(navigator.Heading()))+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
+    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
   }
  else if(millis()>=tempRunningTime)

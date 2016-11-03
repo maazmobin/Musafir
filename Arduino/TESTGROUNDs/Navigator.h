@@ -105,8 +105,16 @@ class Navigator
         // location
         nvPose          Pose( void ) { return m_pose; }
         nvPosition      Position( void ) { return m_pose.position; }
-        nvHeading       Heading( void ) { return m_pose.heading; }
-
+        nvHeading       Heading( void ) //{return m_pose.heading}
+       //MAAZ EDIT
+        { float angle=m_pose.heading*3.142/180;
+        if(angle>3.142)
+        {
+          angle=angle-3.142;
+          angle=(3.142-angle)*(-1);
+          }
+          return angle; }
+        // END Maaz Edit
         // movement
         nvRate          Speed( void ) { return m_speed; }
         nvRate          TurnRate( void ) { return m_turn_rate; }
