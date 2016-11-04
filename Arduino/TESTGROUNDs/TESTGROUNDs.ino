@@ -42,7 +42,17 @@ unsigned long debugPreviousMillis = 0;
 
 int tempRunningTime=5000; // ms
 
+float myAngle=0;
 
+float angleThreshold = 0.1; //0.1=10% of 3.142
+float distanceThreshold = 10 ;
+int trajectoryX[]={ 0 , 0 , 30 , 90 , 30 , 100};
+int trajectoryY[]={ 0 , 30 , 30 , 30 , 90 , -100};
+
+float errorAngle = 0 , angleFollow = 3.1 , distanceFollow = 0;
+
+String inputString = "";         // a string to hold incoming data
+boolean stringComplete = false;
 
 void setup() {
   Serial.begin(115200);
@@ -57,10 +67,12 @@ void setup() {
   navigator.Reset(millis());
 
   initPID();
-  velL = 40; //cm/s for TESTING of nav Speed calculations.
-  velR = 40;
+  velL = 00; //cm/s for TESTING of nav Speed calculations.
+  velR = 00;
   pidL.SetMode(AUTOMATIC);
   pidR.SetMode(AUTOMATIC);
+  
+  inputString.reserve(200);
 }
 
 void loop() {   
@@ -79,40 +91,56 @@ void loop() {
     encCurrR =-encR.read(); encR.write(0);
     navigator.UpdateTicks(encCurrL, encCurrR, millis());
     float distanceL = (float)encCurrL*DISTANCE_PER_TICK;
+    distanceL=abs(distanceL);
     measuredVelL = (float)distanceL*(1000.0/interval);
     float distanceR = (float)encCurrR*DISTANCE_PER_TICK;
+    distanceR=abs(distanceR);
     measuredVelR = (float)distanceR*(1000.0/interval);
   }
 
-  if (currentMillis - debugPreviousMillis >= debugInterval && millis()<=tempRunningTime) {
+  if (currentMillis - debugPreviousMillis >= debugInterval/* && millis()<=tempRunningTime*/) {
     debugPreviousMillis = currentMillis;
-   /* Serial.print(millis());
-    Serial.print(", ");
-    Serial.print(navigator.Position().x/10);
-    Serial.print(", ");
-    Serial.print(navigator.Position().y/10);
-    Serial.print(", ");
-    Serial.print(navigator.Heading());
-    Serial.print(", ");
-    Serial.print(navigator.TurnRate());
-    Serial.print(", ");
-    Serial.print(navigator.Speed()/10);
-    Serial.print(", ");
-    Serial.print(measuredVelL);
-    Serial.print(", ");
-    Serial.println(measuredVelR);*/
-
     String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
   }
- else if(millis()>=tempRunningTime)
-  {
-      velL = 0; //cm/s for TESTING of nav Speed calculations.
-  velR = 0;
-  motorL.setDir(BRAKE);
-  motorR.setDir(BRAKE);
-    }
+  pathFollowing();
 }
+
+void pathFollowing(void)
+{
+  float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
+  xTraj=trajectoryX[5];
+  yTraj=trajectoryY[5];
+  xCurr=int(navigator.Position().x/10);
+  yCurr=int(navigator.Position().y/10);
+    angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
+    distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );
+    Serial.println(distanceFollow);
+    errorAngle=angleFollow-navigator.Heading();
+    errorAngle=atan2(sin(errorAngle),cos(errorAngle));
+    Serial.println(errorAngle);
+    if(errorAngle>=(3.142*angleThreshold))
+    {
+      VelR(30);      
+      VelL(-30);
+      }
+    else if(errorAngle<=(-3.142*angleThreshold))
+    {
+      VelR(-30);      
+      VelL(30);
+      }
+    else if(distanceFollow>=5 ||distanceFollow<=-5)
+    {
+      VelR(30);      
+      VelL(30);
+      }
+      else
+    {
+      VelR(0);      
+      VelL(0);
+      }
+    
+  }
 
 void initPID(void){
   pidL.SetMode(MANUAL); // PID CONTROL OFF
@@ -122,3 +150,14 @@ void initPID(void){
   pidL.SetOutputLimits(0,250);  // min/max PWM
   pidR.SetOutputLimits(0,250);  
 }
+void VelL(int velocity)
+{
+  if(velocity>=0){velL=velocity;motorL.setDir(FORWARD);}
+  else if(velocity<=0){velL=(-1*velocity);motorL.setDir(BACKWARD);}
+  }
+  void VelR(int velocity)
+{
+  if(velocity>=0){velR=velocity;motorR.setDir(FORWARD);}
+  else if(velocity<=0){velR=(-1*velocity);motorR.setDir(BACKWARD);}
+}
+
