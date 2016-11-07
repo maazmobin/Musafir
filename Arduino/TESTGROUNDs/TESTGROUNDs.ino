@@ -49,11 +49,13 @@ float distanceThreshold = 10 ;
 int trajectoryX[]={ 0 , 0 , 30 , 90 , 30 , 100};
 int trajectoryY[]={ 0 , 30 , 30 , 30 , 90 , -100};
 
-float errorAngle = 0 , angleFollow = 3.1 , distanceFollow = 0;
+float errorAngle = 0 , angleFollow = 0 , distanceFollow = 0;
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;
 
+  float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
+int following=0;
 void setup() {
   Serial.begin(115200);
   motorL.setDir(FORWARD);
@@ -98,27 +100,48 @@ void loop() {
     measuredVelR = (float)distanceR*(1000.0/interval);
   }
 
-  if (currentMillis - debugPreviousMillis >= debugInterval/* && millis()<=tempRunningTime*/) {
+ /* if (currentMillis - debugPreviousMillis >= debugInterval) {
     debugPreviousMillis = currentMillis;
     String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
-  }
+  }*/
   pathFollowing();
 }
 
 void pathFollowing(void)
 {
-  float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
-  xTraj=trajectoryX[5];
-  yTraj=trajectoryY[5];
-  xCurr=int(navigator.Position().x/10);
-  yCurr=int(navigator.Position().y/10);
-    angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
-    distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );
-    Serial.println(distanceFollow);
+    xCurr=int(navigator.Position().x/10);
+    yCurr=int(navigator.Position().y/10);
+    int c1,c2;
+  if (stringComplete) 
+    {
+    if(inputString.indexOf(',')>=1){
+        c1 = inputString.indexOf(',')+1;
+        xTraj = inputString.substring(0,c1).toInt();
+        yTraj = inputString.substring(c1).toInt();
+        angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
+        following=1;
+        //Serial.println(angleFollow);
+      }
+      else
+      {
+        angleFollow=inputString.toFloat();
+        //Serial.println(angleFollow);
+        following=2;
+        }
+    inputString = "";
+    stringComplete = false;
+  }
+  if(following==1){angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );//Serial.println(angleFollow);
+  }
+  else if(following ==2){angleFollow=angleFollow;distanceFollow=0;//Serial.println(angleFollow);
+  }
+  
+   // Serial.println(angleFollow);
+    //Serial.println(distanceFollow);
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
-    Serial.println(errorAngle);
+   // Serial.println(errorAngle);
     if(errorAngle>=(3.142*angleThreshold))
     {
       VelR(30);      
@@ -155,9 +178,21 @@ void VelL(int velocity)
   if(velocity>=0){velL=velocity;motorL.setDir(FORWARD);}
   else if(velocity<=0){velL=(-1*velocity);motorL.setDir(BACKWARD);}
   }
-  void VelR(int velocity)
+void VelR(int velocity)
 {
   if(velocity>=0){velR=velocity;motorR.setDir(FORWARD);}
   else if(velocity<=0){velR=(-1*velocity);motorR.setDir(BACKWARD);}
 }
-
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
+}
