@@ -20,10 +20,10 @@ Navigator  navigator;
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/1500.0
 
 // correct for systematic errors
-#define WHEEL_RL_SCALER         0.97f  // Ed
-#define WHEELBASE_SCALER        0.98f  // Eb
+#define WHEEL_RL_SCALER         0.98f  // Ed
+#define WHEELBASE_SCALER        1.01f  // Eb
 // correct distance 
-#define DISTANCE_SCALER         (164.0f/150.0f)  // Es
+#define DISTANCE_SCALER         (118.0f/120.0f)  // Es
 
 #include <PID_v1.h>
 double measuredVelL=0, measuredVelR=0;
@@ -44,18 +44,17 @@ int tempRunningTime=5000; // ms
 
 float myAngle=0;
 
-float angleThreshold = 0.1; //0.1=10% of 3.142
-float distanceThreshold = 10 ;
-int trajectoryX[]={ 0 , 0 , 30 , 90 , 30 , 100};
-int trajectoryY[]={ 0 , 30 , 30 , 30 , 90 , -100};
+float angleThreshold = 0.02; //0.1=10% of 3.142
+float distanceThreshold = 3 ;  //cm
 
-float errorAngle = 0 , angleFollow = 0 , distanceFollow = 0;
+float errorAngle = 0 , angleFollow = 1.57 , recvAngle=0 , distanceFollow = 0;
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;
 
-  float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
+float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
 int following=0;
+
 void setup() {
   Serial.begin(115200);
   motorL.setDir(FORWARD);
@@ -100,11 +99,11 @@ void loop() {
     measuredVelR = (float)distanceR*(1000.0/interval);
   }
 
- /* if (currentMillis - debugPreviousMillis >= debugInterval) {
+  if (currentMillis - debugPreviousMillis >= debugInterval) {
     debugPreviousMillis = currentMillis;
     String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
-  }*/
+  }
   pathFollowing();
 }
 
@@ -119,40 +118,34 @@ void pathFollowing(void)
         c1 = inputString.indexOf(',')+1;
         xTraj = inputString.substring(0,c1).toInt();
         yTraj = inputString.substring(c1).toInt();
-        angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
         following=1;
-        //Serial.println(angleFollow);
       }
       else
       {
-        angleFollow=inputString.toFloat();
-        //Serial.println(angleFollow);
+        recvAngle=inputString.toFloat();
         following=2;
         }
     inputString = "";
     stringComplete = false;
   }
-  if(following==1){angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );//Serial.println(angleFollow);
-  }
-  else if(following ==2){angleFollow=angleFollow;distanceFollow=0;//Serial.println(angleFollow);
-  }
   
-   // Serial.println(angleFollow);
-    //Serial.println(distanceFollow);
+  if(following==1)    {angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );}
+  else if(following == 2 && recvAngle <= 3.2 && recvAngle >= -3.2)    { angleFollow=recvAngle ; distanceFollow=0 ; }
+  
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
-   // Serial.println(errorAngle);
+    
     if(errorAngle>=(3.142*angleThreshold))
     {
-      VelR(30);      
-      VelL(-30);
+      VelR(20);      
+      VelL(-20);
       }
     else if(errorAngle<=(-3.142*angleThreshold))
     {
-      VelR(-30);      
-      VelL(30);
+      VelR(-20);      
+      VelL(20);
       }
-    else if(distanceFollow>=5 ||distanceFollow<=-5)
+    else if(distanceFollow>=distanceThreshold ||distanceFollow<=(-1*distanceThreshold))
     {
       VelR(30);      
       VelL(30);
