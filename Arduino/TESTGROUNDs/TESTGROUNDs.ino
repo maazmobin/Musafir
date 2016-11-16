@@ -15,15 +15,15 @@ Navigator  navigator;
 // Navigator defines
 #define WHEELBASE               nvMM(190)      // millimeters
 #define WHEEL_DIAMETER          nvMM(89)     // millimeters
-#define TICKS_PER_REV           1500
+#define TICKS_PER_REV           1540
 #define WHEEL_DIAMETER_CM       8.9           // centi-meters
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/1500.0
 
 // correct for systematic errors
-#define WHEEL_RL_SCALER         0.98f  // Ed
-#define WHEELBASE_SCALER        1.01f  // Eb
+#define WHEEL_RL_SCALER         1.01f  // Ed
+#define WHEELBASE_SCALER        0.99f  // Eb
 // correct distance 
-#define DISTANCE_SCALER         (118.0f/120.0f)  // Es
+#define DISTANCE_SCALER         1.0f  // Es
 
 #include <PID_v1.h>
 double measuredVelL=0, measuredVelR=0;
@@ -131,7 +131,6 @@ void pathFollowing(void)
   
   if(following==1)    {angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );}
   else if(following == 2 && recvAngle <= 3.2 && recvAngle >= -3.2)    { angleFollow=recvAngle ; distanceFollow=0 ; }
-  
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
     

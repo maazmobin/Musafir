@@ -4,6 +4,8 @@
 #include <RF24.h>
 #include <RF24_config.h>
 
+String ROBOT="2";
+
 // RF24 radio(CE,CSN);
 RF24 radio(49,53);
 const uint64_t pipes[2] = {0xDEDEDEDEE8LL, 0xDEDEDEDEE4LL};
@@ -69,10 +71,13 @@ void radioReceive(void) {
     recvPayload += buff;
     Serial.print(recvPayload);
     Serial.println();
+    if(recvPayload.startsWith(ROBOT)){
+      recvPayload=recvPayload.substring(2);
     if (recvPayload.startsWith("MOTOR")) {
       recvPayload=recvPayload.substring(6);
       Serial1.print(recvPayload);
     }
+  }
     recvPayload = "";
   }
 }
