@@ -1,5 +1,11 @@
-#include <math.h>
 
+const int bufferSize = 100;
+int circularBuffer1[bufferSize];
+int circularBuffer2[bufferSize];
+int smoothing1=0;
+int smoothing2=0;
+
+#include <math.h>
 #include <Encoder.h>
 Encoder encL(2,4);
 Encoder encR(3,5);
@@ -17,6 +23,7 @@ Navigator  navigator;
 #define WHEEL_DIAMETER          nvMM(89)      // millimeters
 #define TICKS_PER_REV           1520          //ROBOT 1
 #define WHEEL_DIAMETER_CM       8.9           // centi-meters
+#define WHEELBASE_CM            18.9
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/((float)TICKS_PER_REV)
 
 // correct for systematic errors
@@ -55,8 +62,18 @@ boolean stringComplete = false;
 float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
 int following=0;
 
+float kpW = 15 , kpV = 5, w = 0 , v = 0 , vl = 0 , vr = 0 ;
+float velDiff=0;
+
+#define maxVelocity 60
+
 void setup() {
   Serial.begin(115200);
+  for(int i = 1 ; i>= bufferSize ; i++)
+  {
+    circularBuffer1[i]=0;
+    circularBuffer2[i]=0;
+    }
   motorL.setDir(FORWARD);
   motorR.setDir(FORWARD);
   
@@ -114,6 +131,7 @@ void pathFollowing(void)
     int c1,c2;
   if (stringComplete) 
     {
+      Serial.println("Received");
     if(inputString.indexOf(',')>=1){
         c1 = inputString.indexOf(',')+1;
         xTraj = inputString.substring(0,c1).toInt();
@@ -133,28 +151,51 @@ void pathFollowing(void)
   else if(following == 2 && recvAngle <= 3.2 && recvAngle >= -3.2)    { angleFollow=recvAngle ; distanceFollow=0 ; }
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
-    
-    if(errorAngle>=(3.142*angleThreshold))
-    {
-      VelR(20);      
-      VelL(-20);
-      }
-    else if(errorAngle<=(-3.142*angleThreshold))
-    {
-      VelR(-20);      
-      VelL(20);
-      }
-    else if(distanceFollow>=distanceThreshold ||distanceFollow<=(-1*distanceThreshold))
-    {
-      VelR(30);      
-      VelL(30);
-      }
-      else
-    {
-      VelR(0);      
-      VelL(0);
-      }
-    
+    if(errorAngle<=0.04 && errorAngle>=(-0.04) )
+    errorAngle=0;
+    if(distanceFollow<=4)
+    {distanceFollow=0; errorAngle=0;}
+  //  w=constrain(w,-0.5*v,0.5*v);
+    v=kpV*distanceFollow;
+    w=kpW*errorAngle;
+    vl=(2*v)-(w*WHEELBASE_CM);
+    vl/=(2*WHEEL_DIAMETER_CM);
+    vr=(2*v)+(w*WHEELBASE_CM);
+    vr/=(2*WHEEL_DIAMETER_CM);
+    vl=constrain(vl,0,500);
+    vr=constrain(vr,0,500);
+   if( vl >= vr && vl >= maxVelocity )
+   {
+    velDiff=(vr/vl); //in %
+    vl=maxVelocity;
+    vr=maxVelocity*velDiff;
+    }
+   else if(vr >= vl && vr >= maxVelocity )
+   {
+    velDiff=(vl/vr); //in %
+    vr=maxVelocity;
+    vl=maxVelocity*velDiff;
+    }
+   /* smoothing1 -= circularBuffer1[bufferSize-1];
+    smoothing2 -= circularBuffer2[bufferSize-1];;
+    for(int i=bufferSize-1 ; i>=1 ; i--)
+    { 
+    circularBuffer1[i] = circularBuffer1[i-1] ;
+    circularBuffer2[i] = circularBuffer2[i-1] ;
+       }
+   circularBuffer1[0] = vr;
+   smoothing1 += circularBuffer1[0];
+   circularBuffer2[0] = vl;
+   smoothing2 += circularBuffer2[0];
+   vr=smoothing1/bufferSize;
+   vl=smoothing2/bufferSize;*/
+   if(vl>0 && vl<=10)
+   vl=10;
+   if(vr>0 && vr<=10)
+   vr=10;
+   velL=vl;
+   velR=vr;
+   Serial.println(String(vr)+","+String(vl));
   }
 
 void initPID(void){

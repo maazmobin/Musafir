@@ -4,7 +4,7 @@
 #include <RF24.h>
 #include <RF24_config.h>
 
-String ROBOT="2";
+String ROBOT="1";
 
 // RF24 radio(CE,CSN);
 RF24 radio(49,53);
