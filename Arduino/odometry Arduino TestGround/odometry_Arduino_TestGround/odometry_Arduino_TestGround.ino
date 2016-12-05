@@ -5,6 +5,10 @@ int circularBuffer2[bufferSize];
 int smoothing1=0;
 int smoothing2=0;
 
+#define trajArraySize 6
+int trajBuffer[trajArraySize][2] = {{0 , 40},{-40 , 40},{-80 , 80},{-80 , 120},{-40 , 160},{-80 , 200}};
+int currentIndex = 0;
+
 #include <math.h>
 #include <Encoder.h>
 Encoder encL(2,4);
@@ -62,18 +66,16 @@ boolean stringComplete = false;
 float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
 int following=0;
 
-float kpW = 15 , kpV = 5, w = 0 , v = 0 , vl = 0 , vr = 0 ;
+float kpW = 15 , kpV = 5 , w = 0 , v = 0 , vl = 0 , vr = 0 ;
 float velDiff=0;
 
 #define maxVelocity 60
 
 void setup() {
   Serial.begin(115200);
-  for(int i = 1 ; i>= bufferSize ; i++)
-  {
-    circularBuffer1[i]=0;
-    circularBuffer2[i]=0;
-    }
+  initSerialBufferArray();
+  initCircularBufferArray();
+  
   motorL.setDir(FORWARD);
   motorR.setDir(FORWARD);
   
@@ -129,28 +131,19 @@ void pathFollowing(void)
     xCurr=int(navigator.Position().x/10);
     yCurr=int(navigator.Position().y/10);
     int c1,c2;
-  if (stringComplete) 
+  if (distanceFollow == 0 && currentIndex<trajArraySize) 
     {
-      Serial.println("Received");
-    if(inputString.indexOf(',')>=1){
-        c1 = inputString.indexOf(',')+1;
-        xTraj = inputString.substring(0,c1).toInt();
-        yTraj = inputString.substring(c1).toInt();
-        following=1;
-      }
-      else
-      {
-        recvAngle=inputString.toFloat();
-        following=2;
-        }
-    inputString = "";
-    stringComplete = false;
+    xTraj=trajBuffer[currentIndex][0];
+    yTraj=trajBuffer[currentIndex][1];
+    currentIndex ++ ;
   }
   
-  if(following==1)    {angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );}
-  else if(following == 2 && recvAngle <= 3.2 && recvAngle >= -3.2)    { angleFollow=recvAngle ; distanceFollow=0 ; }
+    angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
+    distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );
+    
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
+    
     if(errorAngle<=0.04 && errorAngle>=(-0.04) )
     errorAngle=0;
     if(distanceFollow<=4)
@@ -162,20 +155,24 @@ void pathFollowing(void)
     vl/=(2*WHEEL_DIAMETER_CM);
     vr=(2*v)+(w*WHEELBASE_CM);
     vr/=(2*WHEEL_DIAMETER_CM);
-    vl=constrain(vl,0,500);
-    vr=constrain(vr,0,500);
+                              //CAR DRIVE
+
    if( vl >= vr && vl >= maxVelocity )
    {
-    velDiff=(vr/vl); //in %
+    velDiff=(maxVelocity/vl); //in %
     vl=maxVelocity;
-    vr=maxVelocity*velDiff;
+    vr=vr*velDiff;
     }
-   else if(vr >= vl && vr >= maxVelocity )
+   else if( vr >= vl && vr >= maxVelocity )
    {
-    velDiff=(vl/vr); //in %
+    velDiff=(maxVelocity/vr); //in %
     vr=maxVelocity;
-    vl=maxVelocity*velDiff;
+    vl=vl*velDiff;
     }
+    
+    
+
+    
    /* smoothing1 -= circularBuffer1[bufferSize-1];
     smoothing2 -= circularBuffer2[bufferSize-1];;
     for(int i=bufferSize-1 ; i>=1 ; i--)
@@ -188,13 +185,21 @@ void pathFollowing(void)
    circularBuffer2[0] = vl;
    smoothing2 += circularBuffer2[0];
    vr=smoothing1/bufferSize;
-   vl=smoothing2/bufferSize;*/
+   vl=smoothing2/bufferSize;
+   
+   */
    if(vl>0 && vl<=10)
    vl=10;
+   else if(vl>=-10 && vl<0)
+   vl=-10;
+   
    if(vr>0 && vr<=10)
    vr=10;
-   velL=vl;
-   velR=vr;
+   else if(vr>=-10 && vr<0)
+   vr=-10;
+   
+   VelL(vl);
+   VelR(vr);
    Serial.println(String(vr)+","+String(vl));
   }
 
@@ -227,5 +232,24 @@ void serialEvent() {
     if (inChar == '\n') {
       stringComplete = true;
     }
+  }
+}
+
+void initSerialBufferArray (void)   //Initializing Zero in the Serial Buffer Array
+{
+/*  for(int i =0 ; i < SerialBufferSize ; i++)
+  {
+    for(int j =0 ; j < 2 ; j++)
+    {  
+      SerialFifoBuffer[i][j]= 0 ;
+    }  
+  }*/
+}
+void initCircularBufferArray (void)   //Initializing Zero in the Serial Buffer Array
+{
+    for(int i =0 ; i < bufferSize ; i++)
+  {
+    circularBuffer1[i]=0;
+    circularBuffer2[i]=0;
   }
 }
