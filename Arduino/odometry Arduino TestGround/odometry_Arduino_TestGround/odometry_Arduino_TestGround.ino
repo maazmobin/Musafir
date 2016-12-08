@@ -5,8 +5,8 @@ int circularBuffer2[bufferSize];
 int smoothing1=0;
 int smoothing2=0;
 
-#define trajArraySize 6
-int trajBuffer[trajArraySize][2] = {{0 , 40},{-40 , 40},{-80 , 80},{-80 , 120},{-40 , 160},{-80 , 200}};
+#define trajArraySize 4
+int trajBuffer[trajArraySize][2] = {{40 , 40},{0 , 80},{-40 , 80},{-80 , 0}};
 int currentIndex = 0;
 
 #include <math.h>
@@ -31,10 +31,10 @@ Navigator  navigator;
 #define DISTANCE_PER_TICK       (M_PI*WHEEL_DIAMETER_CM)/((float)TICKS_PER_REV)
 
 // correct for systematic errors
-#define WHEEL_RL_SCALER         1.0f  // Ed
-#define WHEELBASE_SCALER        1.0f  // Eb
+#define WHEEL_RL_SCALER         0.98f  // Ed
+#define WHEELBASE_SCALER        1.01f  // Eb
 // correct distance 
-#define DISTANCE_SCALER         1.0f  // Es
+#define DISTANCE_SCALER         (119.0f/120.0f)  // Es
 
 #include <PID_v1.h>
 double measuredVelL=0, measuredVelR=0;
@@ -67,6 +67,7 @@ float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
 int following=0;
 
 float kpW = 15 , kpV = 5 , w = 0 , v = 0 , vl = 0 , vr = 0 ;
+int VL = 0 , VR = 0 ;
 float velDiff=0;
 
 #define maxVelocity 60
@@ -93,6 +94,18 @@ void setup() {
   pidR.SetMode(AUTOMATIC);
   
   inputString.reserve(200);
+  Serial.println("DataFormat: x,y,Q,v,w,vl,vr");
+  delay(50);
+  Serial.println("W_RL_SC: "+String(WHEEL_RL_SCALER));
+  delay(50);
+  Serial.println("WB_SC: "+String(WHEELBASE_SCALER));  
+  delay(50);
+  Serial.println("DIST_SC: "+String(DISTANCE_SCALER));
+  delay(50);
+  Serial.println("P-cont KpV "+String(kpV));
+  delay(50);
+  Serial.println("P-cont KpW "+String(kpW));  
+  delay(50);
 }
 
 void loop() {   
@@ -120,7 +133,7 @@ void loop() {
 
   if (currentMillis - debugPreviousMillis >= debugInterval) {
     debugPreviousMillis = currentMillis;
-    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
+    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(int(v))+","+String(int(w))+","+String(int(VL))+","+String(int(VR));//+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
   }
   pathFollowing();
@@ -131,13 +144,18 @@ void pathFollowing(void)
     xCurr=int(navigator.Position().x/10);
     yCurr=int(navigator.Position().y/10);
     int c1,c2;
+    if (distanceFollow == 0 && currentIndex==trajArraySize)
+  {
+    Serial.println(String(millis())+" Trajectory Accomplished");
+    currentIndex++;
+    }
   if (distanceFollow == 0 && currentIndex<trajArraySize) 
     {
     xTraj=trajBuffer[currentIndex][0];
     yTraj=trajBuffer[currentIndex][1];
     currentIndex ++ ;
+    Serial.println(String(millis())+" Point-"+String(currentIndex-1)+" Accomplished");
   }
-  
     angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
     distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );
     
@@ -148,7 +166,6 @@ void pathFollowing(void)
     errorAngle=0;
     if(distanceFollow<=4)
     {distanceFollow=0; errorAngle=0;}
-  //  w=constrain(w,-0.5*v,0.5*v);
     v=kpV*distanceFollow;
     w=kpW*errorAngle;
     vl=(2*v)-(w*WHEELBASE_CM);
@@ -168,26 +185,9 @@ void pathFollowing(void)
     velDiff=(maxVelocity/vr); //in %
     vr=maxVelocity;
     vl=vl*velDiff;
-    }
-    
-    
+    }    
 
-    
-   /* smoothing1 -= circularBuffer1[bufferSize-1];
-    smoothing2 -= circularBuffer2[bufferSize-1];;
-    for(int i=bufferSize-1 ; i>=1 ; i--)
-    { 
-    circularBuffer1[i] = circularBuffer1[i-1] ;
-    circularBuffer2[i] = circularBuffer2[i-1] ;
-       }
-   circularBuffer1[0] = vr;
-   smoothing1 += circularBuffer1[0];
-   circularBuffer2[0] = vl;
-   smoothing2 += circularBuffer2[0];
-   vr=smoothing1/bufferSize;
-   vl=smoothing2/bufferSize;
-   
-   */
+
    if(vl>0 && vl<=10)
    vl=10;
    else if(vl>=-10 && vl<0)
@@ -200,7 +200,10 @@ void pathFollowing(void)
    
    VelL(vl);
    VelR(vr);
-   Serial.println(String(vr)+","+String(vl));
+   
+   VL=vl;
+   VR=vr;
+   //Serial.println(String(vr)+","+String(vl));
   }
 
 void initPID(void){
