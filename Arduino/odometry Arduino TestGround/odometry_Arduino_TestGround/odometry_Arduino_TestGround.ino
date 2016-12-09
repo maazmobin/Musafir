@@ -5,8 +5,8 @@ int circularBuffer2[bufferSize];
 int smoothing1=0;
 int smoothing2=0;
 
-#define trajArraySize 4
-int trajBuffer[trajArraySize][2] = {{40 , 40},{0 , 80},{-40 , 80},{-80 , 0}};
+#define trajArraySize 1
+int trajBuffer[trajArraySize][2] = {{50 , 60}};
 int currentIndex = 0;
 
 #include <math.h>
@@ -65,8 +65,8 @@ boolean stringComplete = false;
 
 float xTraj=0,yTraj=0,xCurr=0,yCurr=0;
 int following=0;
-
-float kpW = 15 , kpV = 5 , w = 0 , v = 0 , vl = 0 , vr = 0 ;
+//kpW = 15 is good. // kpv 5 to 7 is good
+float kpW = 15 , kpV = 25  , w = 0 , v = 0 , vl = 0 , vr = 0 ;
 int VL = 0 , VR = 0 ;
 float velDiff=0;
 
@@ -146,7 +146,7 @@ void pathFollowing(void)
     int c1,c2;
     if (distanceFollow == 0 && currentIndex==trajArraySize)
   {
-    Serial.println(String(millis())+" Trajectory Accomplished");
+    Serial.println(String(millis())+" Point Accomplished");
     currentIndex++;
     }
   if (distanceFollow == 0 && currentIndex<trajArraySize) 
