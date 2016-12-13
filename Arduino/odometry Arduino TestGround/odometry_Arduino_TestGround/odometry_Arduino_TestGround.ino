@@ -69,6 +69,7 @@ float xTraj_2=0,yTraj_2=0;
 int following=0;
 
 float kpW = 15 , kpV = 5 , w = 0 , v = 0 , vl = 0 , vr = 0 ;
+int VL = 0 , VR = 0 ;
 float velDiff=0;
 
 #define maxVelocity 60
@@ -95,6 +96,19 @@ void setup() {
   pidR.SetMode(AUTOMATIC);
   
   inputString.reserve(200);
+
+    Serial.println("DataFormat: x,y,Q,v,w,vl,vr");
+  delay(50);
+  Serial.println("W_RL_SC: "+String(WHEEL_RL_SCALER));
+  delay(50);
+  Serial.println("WB_SC: "+String(WHEELBASE_SCALER));  
+  delay(50);
+  Serial.println("DIST_SC: "+String(DISTANCE_SCALER));
+  delay(50);
+  Serial.println("P-cont KpV "+String(kpV));
+  delay(50);
+  Serial.println("P-cont KpW "+String(kpW));  
+  delay(50);
 }
 
 void loop() {   
@@ -122,7 +136,7 @@ void loop() {
 
   if (currentMillis - debugPreviousMillis >= debugInterval) {
     debugPreviousMillis = currentMillis;
-    String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
+     String dataTX=String(int(navigator.Position().x/10))+","+String(int(navigator.Position().y/10))+","+String(navigator.Heading())+","+String(int(v))+","+String(int(w))+","+String(int(VL))+","+String(int(VR));//+","+String(navigator.TurnRate())+","+String(navigator.Speed()/10);
     Serial.println(dataTX);
   }
   pathFollowing();
@@ -130,32 +144,36 @@ void loop() {
 
 void pathFollowing(void)
 {
-    xCurr=int(navigator.Position().x/10);
+    xCurr=int(navigator.Position().x/10);   //Load the current coordinates
     yCurr=int(navigator.Position().y/10);
     int c1,c2;
-  if (distanceFollow == 0 && currentIndex<trajArraySize) 
+    if (distanceFollow == 0 && currentIndex==trajArraySize)   // function only use to print
+  {
+    Serial.println(String(millis())+" Trajectory Accomplished");
+    currentIndex++;
+    }
+  if (distanceFollow == 0 && currentIndex<trajArraySize)        // loading points from Array
     {
     xTraj=trajBuffer[currentIndex][0];
     yTraj=trajBuffer[currentIndex][1];
     currentIndex ++ ;
+    Serial.println(String(millis())+" Point-"+String(currentIndex-1)+" Accomplished");
   }
-  if (currentIndex<trajArraySize)
-  {
- distanceFollow_2=40;}
- else {distanceFollow_2=0;}
-  
+
     angleFollow=atan2(yTraj-yCurr,xTraj-xCurr);
     distanceFollow=sqrt  (sq(yTraj-yCurr)  +   sq(xTraj-xCurr) );
     
     errorAngle=angleFollow-navigator.Heading();
     errorAngle=atan2(sin(errorAngle),cos(errorAngle));
     
-    if(errorAngle<=0.04 && errorAngle>=(-0.04) )
+    if(errorAngle<=0.05 && errorAngle>=(-0.05) ) // angle thresholding
     errorAngle=0;
-    if(distanceFollow<=4)
+    if(distanceFollow<=6)
     {distanceFollow=0; errorAngle=0;}
   //  w=constrain(w,-0.5*v,0.5*v);
+  if(currentIndex >= (trajArraySize)) 
     v=kpV*(distanceFollow+distanceFollow_2);
+    else v=350;
     w=kpW*errorAngle;
     vl=(2*v)-(w*WHEELBASE_CM);
     vl/=(2*WHEEL_DIAMETER_CM);
@@ -206,6 +224,9 @@ void pathFollowing(void)
    
    VelL(vl);
    VelR(vr);
+   
+   VL=vl;
+   VR=vr;
   // Serial.println(String(vr)+","+String(vl));
   }
 
